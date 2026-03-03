@@ -1,8 +1,0 @@
-.ipynb_checkpoints/
-venv/
-__pycache__/
-*.pyc
-jobs_cleaned.csv
-ranked_cleaned.csv
-Resume.csv
-postings.csv
