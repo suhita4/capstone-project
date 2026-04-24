@@ -169,7 +169,7 @@ def recommend_candidates(job_description: str, candidates_df: pd.DataFrame, top_
         candidate_entities = extract_entities(str(row["clean_resume"]))
         scores = compute_match_score(job_entities, candidate_entities)
 
-        # Matched skills for display
+        # Matched and missing skills for display
         job_skills = set(s.lower() for s in job_entities.get("SKILL", []))
         candidate_skills = set(s.lower() for s in candidate_entities.get("SKILL", []))
         matched_skills = list(job_skills & candidate_skills)
