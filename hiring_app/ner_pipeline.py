@@ -142,6 +142,19 @@ def compute_match_score(job_entities: dict, candidate_entities: dict) -> dict:
 # ─────────────────────────────────────────────
 # 5. Main recommendation function
 # ─────────────────────────────────────────────
+def generate_explanation(matched: list, missing: list, score: float) -> str:
+    matched_str = ", ".join(matched[:3]) if matched else None
+    missing_str = ", ".join(missing[:2]) if missing else None
+    if matched_str and missing_str:
+        return f"Strong match due to {matched_str}; lacks {missing_str}"
+    elif matched_str:
+        return f"Strong match due to {matched_str}"
+    elif missing_str:
+        return f"Weak skill overlap; lacks {missing_str}"
+    else:
+        return "Match based on title and experience alignment"
+
+
 def recommend_candidates(job_description: str, candidates_df: pd.DataFrame, top_n: int = 5) -> list:
     """
     Given a job description and candidate dataframe, return top N ranked candidates.
@@ -157,13 +170,16 @@ def recommend_candidates(job_description: str, candidates_df: pd.DataFrame, top_
         scores = compute_match_score(job_entities, candidate_entities)
 
         # Matched skills for display
-        matched_skills = list(
-            set(job_entities.get("SKILL", [])) & set(candidate_entities.get("SKILL", []))
-        )
+        job_skills = set(s.lower() for s in job_entities.get("SKILL", []))
+        candidate_skills = set(s.lower() for s in candidate_entities.get("SKILL", []))
+        matched_skills = list(job_skills & candidate_skills)
+        missing_skills = list(job_skills - candidate_skills)
 
         # Blend NER score with existing similarity score from notebook (50/50)
         notebook_score = float(row.get("similarity_score", 0)) * 100
         blended_score = round((scores["total_score"] + notebook_score) / 2, 1)
+
+        explanation = generate_explanation(matched_skills, missing_skills, blended_score)
 
         results.append({
             "id": row["ID"],
@@ -175,6 +191,8 @@ def recommend_candidates(job_description: str, candidates_df: pd.DataFrame, top_
             "experience_score": scores["experience_score"],
             "similarity_score": round(notebook_score, 1),
             "matched_skills": matched_skills,
+            "missing_skills": missing_skills,
+            "explanation": explanation,
             "extracted_skills": candidate_entities.get("SKILL", []),
             "extracted_titles": candidate_entities.get("JOB_TITLE", []),
             "extracted_experience": candidate_entities.get("EXPERIENCE", []),
